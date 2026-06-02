@@ -26,37 +26,41 @@ description: 在 Windows 系统中创建一次性定时提醒。当用户说"在
 写临时 .ps1 文件，内容如下模板，然后 `powershell.exe -File` 执行：
 
 ```powershell
-$trigger = (Get-Date).AddMinutes(1)          # 或用具体 datetime
-$taskName = 'ClaudeReminder-<english-id>'
-$skillDir = 'C:\Users\chenjunjin\.claude\skills\windows-reminder'
+$trigger = (Get-Date).AddMinutes(1)          # 或用 Get-Date -Year ... -Month ... -Day ...
+$taskName = "ClaudeReminder-<english-id>"
+$skillDir = "C:\Users\chenjunjin\.claude\skills\windows-reminder"
 $script   = "$skillDir\scripts\show-notification.ps1"
-$title    = '<notification title>'
-$message  = '<notification content>'
+$title    = "<notification title>"
+$message  = "<notification content>"
 
-# Build the PowerShell command that the VBS will launch
+Write-Host ("Scheduling for " + $trigger.ToString("HH:mm") + "...")
+
+# Build PowerShell command line. Backtick-doublequote (`") for literal " inside double-quoted string.
 $psCmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$script`" -Title `"$title`" -Message `"$message`" -Sound Reminder -Snooze"
 
-# VBS requires doubled double quotes. Use -replace to handle safely.
-$psCmdForVbs = $psCmd -replace '"', '""'
-$vbsContent = 'CreateObject("Wscript.Shell").Run "' + $psCmdForVbs + '", 0, False'
+# VBS requires doubled double quotes. .Replace() is simpler than -replace (no regex escaping issues).
+$psCmdForVbs = $psCmd.Replace('"', '""')
 
+# Build VBS wrapper using [char]34 + concatenation (avoids nested quote hell)
+$q = [char]34
+$vbsContent = "CreateObject(" + $q + "Wscript.Shell" + $q + ").Run " + $q + $psCmdForVbs + $q + ", 0, False"
 $vbsPath = "$skillDir\scripts\_w_$taskName.vbs"
 $vbsContent | Out-File -FilePath $vbsPath -Encoding ASCII
 
-# Scheduled task calls wscript.exe with the VBS wrapper
+# Create scheduled task
 $t = New-ScheduledTaskTrigger -Once -At $trigger
-$a = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument "`"$vbsPath`""
+$a = New-ScheduledTaskAction -Execute "wscript.exe" -Argument ($q + $vbsPath + $q)
 Register-ScheduledTask -TaskName $taskName -Trigger $t -Action $a -Force -ErrorAction Stop | Out-Null
 
-$ts = $trigger.ToString('HH:mm:ss')
-Write-Host "OK: $taskName fires at $ts"
+Write-Host "OK"
 ```
 
-**细节**：
-- `Wscript.Shell.Run` 第二个参数 `0` = 隐藏窗口（完全无闪现）
-- VBS 中双引号要双写 `""` → 用 `-replace '"', '""'` 处理
+**关键点**：
+- `[char]34` = 双引号字符，用拼接避免嵌套转义
+- `.Replace('"', '""')` 把 `"` 变成 `""`（VBS 语法要求），比 `-replace` 简单
+- 回勾双引号 `` `" `` 在双引号字符串中表示字面 `"`
+- `"Wscript.Shell".Run(..., 0, False)` 的 `0` = 隐藏窗口
 - VBS 文件放 `scripts\_w_<任务名>.vbs`，删除任务时一并清理
-- 任务名只用 ASCII
 
 ### 第三步：验证
 
