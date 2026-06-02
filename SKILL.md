@@ -1,106 +1,73 @@
 ---
 name: windows-reminder
-description: 在 Windows 系统中创建一次性定时提醒。当用户说"在xxx时候提醒我xxx"、"提醒我"、"设个闹钟"、"到时间叫我"、或表达想在某个时间点收到通知时使用。解析中文时间表达式，通过后台 PowerShell 进程定时触发 BurntToast 原生通知，自动更新 Obsidian 提醒记录。
+description: 在 Windows 上创建定时提醒。当用户说"在XXX时候提醒我XXX"、"X分钟后提醒我"、"设个闹钟"、"到时间叫我"时使用。通过后台进程定时弹出 Windows 原生通知，并在 Obsidian 提醒文件夹中创建笔记跟踪状态。
 ---
 
-## Windows 定时提醒
+## 工作流程
 
-工作流程：解析时间 → 创建提醒笔记 → 启动后台进程 → 到时弹出原生通知 + 自动更新状态。
+1. **解析时间** — 常见表达：`明天下午3点`(+1d 15:00)、`5分钟后`(+5m)、`半小时后`(+30m)、`1小时后`(+60m)、`下周一早上10点`、`晚上7点`(今天，已过则警告)
+2. **Claude 创建笔记** — 用 Write 工具写入 `reminders/YYYY-MM-DD-{slug}.md`，保证中文/emoji 编码正确
+3. **启动后台定时** — 写纯 ASCII 的 .ps1，`Start-Sleep` 到点后调 `show-notification.ps1` 弹 toast + 更新状态
+4. **回复用户**
 
-### 第一步：解析时间
+## 笔记模板
 
-| 用户表达 | 解析 |
-|---------|------|
-| `明天下午3点` | 日期 +1，15:00 |
-| `5分钟后` | now +5min |
-| `半小时后` | now +30min |
-| `1小时后` | now +60min |
-| `下周一早上10点` | 下周一 10:00 |
-| `晚上7点` | 今天 19:00（已过则警告） |
-
-### 第二步：创建提醒笔记 + 启动后台进程
-
-写临时 .ps1 文件，内容如下模板，然后 `powershell.exe -File` 执行：
-
-```powershell
-$trigger = (Get-Date).AddMinutes(1)
-$taskName = "ClaudeReminder-<english-id>"
-$skillDir = "C:\Users\chenjunjin\.claude\skills\windows-reminder"
-$script   = "$skillDir\scripts\show-notification.ps1"
-$title    = "<notification title>"
-$message  = "<notification content>"
-$vaultRoot = "D:\AAAOddsAndEnds\PROGRAM\Obsidian Valut\Study"
-
-# 1. Find the reminders folder (Chinese name — use exclusion to avoid encoding issues)
-$exclude = @(".claude", ".claudian", ".obsidian", ".git", "Anki", "wiki", "raw", "output")
-$noteDir = Get-ChildItem $vaultRoot -Directory | Where-Object { $exclude -notcontains $_.Name } | Select-Object -First 1
-if (-not $noteDir) { Write-Error "提醒 folder not found. Create it manually in vault."; exit 1 }
-$noteDir = $noteDir.FullName
-$noteDate = $trigger.ToString("yyyy-MM-dd")
-$shortName = $title.ToLower() -replace '[^a-z0-9]+', '-' -replace '^-|-$', ''
-$noteName = "$noteDate-$shortName.md"
-$notePath = "$noteDir\$noteName"
-
-$noteContent = @"
+```markdown
 ---
 status: waiting
-trigger: $($trigger.ToString('yyyy-MM-dd HH:mm'))
-created: $(Get-Date -Format 'yyyy-MM-dd HH:mm')
-task_name: $taskName
-sound: Reminder
-snooze: true
+trigger: YYYY-MM-DD HH:mm
+created: YYYY-MM-DD HH:mm
+task_name: ClaudeReminder-xxx
 ---
 
-# $title
+# 标题
 
-` + "`INPUT[inlineSelect(option(waiting, ⏳ 等待中), option(reminded, 🔔 已提醒), option(done, ✅ 已完成), option(pending, ❌ 待完成)):status]`" + @"
+`INPUT[inlineSelect(option(waiting, 等待中), option(reminded, 已提醒), option(done, 已完成), option(pending, 待完成)):status]`
 
-**触发时间**：$($trigger.ToString('yyyy年M月d日 HH:mm'))
-**内容**：$message
-**任务名**：$taskName
-"@
-$noteContent | Out-File -FilePath $notePath -Encoding UTF8
-Write-Host "Note created: $noteName"
+**触发时间**：YYYY年M月D日 HH:mm
+**内容**：xxx
+```
 
-# 2. Add legacy table entry (backward compat)
-$logFile = Get-ChildItem $vaultRoot -Filter "提醒记录.md" -ErrorAction SilentlyContinue | Select-Object -First 1
-if ($logFile) {
-    $lines = Get-Content $logFile.FullName -Encoding UTF8
-    $lines += "| $(Get-Date -Format 'yyyy-MM-dd HH:mm') | $($trigger.ToString('yyyy-MM-dd HH:mm')) | $message | $taskName | waiting |"
-    $lines | Set-Content $logFile.FullName -Encoding UTF8
-}
+`INPUT[inlineSelect]` 提供状态下拉栏（需 Meta Bind 插件，已安装）。
 
-# 3. Launch background timer process
-$seconds = [math]::Max(1, [math]::Ceiling(($trigger - (Get-Date)).TotalSeconds))
+## 定时脚本模板
+
+用 **bash heredoc** 写临时 .ps1（纯 ASCII，不含中文），然后 `powershell.exe -File` 执行：
+
+```powershell
+$seconds = <N>
+$noteName = "<YYYY-MM-DD-xxx.md>"
+$taskName = "ClaudeReminder-xxx"
+$title    = "<title>"
+$message  = "<message>"
+$script   = "C:\Users\chenjunjin\.claude\skills\windows-reminder\scripts\show-notification.ps1"
+$vaultRoot = "D:\AAAOddsAndEnds\PROGRAM\Obsidian Valut\Study"
+
+# 按文件名递归搜索（文件夹名含中文，不硬编码）
+$notePath = Get-ChildItem $vaultRoot -Recurse -Filter $noteName -ErrorAction SilentlyContinue | Select-Object -First 1 | ForEach-Object { $_.FullName }
+if (-not $notePath) { Write-Error "Note not found: $noteName"; exit 1 }
+
 $bgCmd = "Start-Sleep -Seconds $seconds; & '$script' -Title '$title' -Message '$message' -Sound Reminder -Snooze -NotePath '$notePath' -TaskName '$taskName'"
 Start-Process -FilePath "powershell.exe" -ArgumentList @("-NoProfile", "-WindowStyle", "Hidden", "-Command", $bgCmd) -WindowStyle Hidden
-
-Write-Host ("OK: fires at " + $trigger.ToString("HH:mm:ss"))
 ```
 
-**关键点**：
-- `提醒/` 文件夹：每个提醒一个 .md 笔记，YAML frontmatter + Meta Bind 下拉栏
-- `status` 属性：waiting → reminded（通知触发时自动更新）
-- Meta Bind `INPUT[inlineSelect]`：在笔记内提供状态下拉选择（✅已完成 / ❌待完成 手动改）
-- 后台进程：`Start-Process -WindowStyle Hidden` → 无黑框
-- 兼容旧格式：同时追加 `提醒记录.md` 表格行
-
-### 第三步：回复
+## 回复格式
 
 ```
-✅ 已设置提醒：**YYYY年M月D日 上/下午H:MM** — 内容
-📝 提醒笔记：[[提醒/YYYY-MM-DD-ClaudeReminder-xxx]]
+已设提醒：**M月D日 HH:mm** — 内容  [[reminders/YYYY-MM-DD-xxx|查看]]
 ```
 
-### 状态说明
+## 状态说明
 
-| frontmatter 值 | 显示 | 谁改 |
-|---------------|------|------|
-| `waiting` | ⏳ 等待中 | 系统创建时 |
-| `reminded` | 🔔 已提醒 | 系统通知时 |
-| `done` | ✅ 已完成 | 手动 |
-| `pending` | ❌ 待完成 | 手动 |
+| 值 | 含义 | 谁改 |
+|---|------|------|
+| `waiting` | 等待触发 | 系统 |
+| `reminded` | 已弹通知 | 系统自动 |
+| `done` | 已完成 | 手动 |
+| `pending` | 待完成 | 手动 |
 
-### Meta Bind 插件
+## 架构原则
 
-已安装到 `.obsidian/plugins/obsidian-meta-bind-plugin/`。**需重启 Obsidian 生效**。
+- 笔记由 Claude 写（Write 工具，UTF-8 正确，可含中文/emoji）
+- 定时由 .ps1 做（纯 ASCII，零编码问题，不含中文）
+- `show-notification.ps1` 触发时自动改 frontmatter `status: waiting → reminded`
