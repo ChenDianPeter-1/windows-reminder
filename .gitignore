@@ -1,0 +1,8 @@
+# Temp scripts generated per reminder
+scripts/_w_*.vbs
+scripts/_r.ps1
+scripts/_test_*.ps1
+scripts/_tmp_*.ps1
+scripts/_bt_*.ps1
+scripts/_remind.ps1
+scripts/_e2e*.ps1
