@@ -31,9 +31,11 @@ $title    = "<notification title>"
 $message  = "<notification content>"
 $vaultRoot = "D:\AAAOddsAndEnds\PROGRAM\Obsidian Valut\Study"
 
-# 1. Create reminder note in 提醒/ folder
-$noteDir = "$vaultRoot\提醒"
-if (-not (Test-Path $noteDir)) { New-Item -ItemType Directory -Path $noteDir | Out-Null }
+# 1. Find the reminders folder (Chinese name — use exclusion to avoid encoding issues)
+$exclude = @(".claude", ".claudian", ".obsidian", ".git", "Anki", "wiki", "raw", "output")
+$noteDir = Get-ChildItem $vaultRoot -Directory | Where-Object { $exclude -notcontains $_.Name } | Select-Object -First 1
+if (-not $noteDir) { Write-Error "提醒 folder not found. Create it manually in vault."; exit 1 }
+$noteDir = $noteDir.FullName
 $noteDate = $trigger.ToString("yyyy-MM-dd")
 $noteName = "$noteDate-$taskName.md"
 $notePath = "$noteDir\$noteName"
