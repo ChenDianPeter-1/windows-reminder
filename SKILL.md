@@ -37,7 +37,8 @@ $noteDir = Get-ChildItem $vaultRoot -Directory | Where-Object { $exclude -notcon
 if (-not $noteDir) { Write-Error "提醒 folder not found. Create it manually in vault."; exit 1 }
 $noteDir = $noteDir.FullName
 $noteDate = $trigger.ToString("yyyy-MM-dd")
-$noteName = "$noteDate-$taskName.md"
+$shortName = $title.ToLower() -replace '[^a-z0-9]+', '-' -replace '^-|-$', ''
+$noteName = "$noteDate-$shortName.md"
 $notePath = "$noteDir\$noteName"
 
 $noteContent = @"
