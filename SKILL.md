@@ -6,9 +6,8 @@ description: 在 Windows 上创建定时提醒。当用户说"在XXX时候提醒
 ## 工作流程
 
 1. **解析时间** — 常见表达：`明天下午3点`(+1d 15:00)、`5分钟后`(+5m)、`半小时后`(+30m)、`1小时后`(+60m)、`下周一早上10点`、`晚上7点`(今天，已过则警告)
-2. **Claude 创建笔记** — 用 Write 工具写入 `reminders/YYYY-MM-DD-{slug}.md`，保证中文/emoji 编码正确
-3. **启动后台定时** — 写纯 ASCII 的 .ps1，`Start-Sleep` 到点后调 `show-notification.ps1` 弹 toast + 更新状态
-4. **回复用户**
+2. **Claude 创建笔记** — 用 Write 工具写入 `reminders/YYYY-MM-DD-{slug}.md`
+3. **回复用户** — 无需启动后台进程；`daemon.ps1` 每分钟扫描一次，到点自动弹通知
 
 ## 笔记模板
 
@@ -30,26 +29,13 @@ task_name: ClaudeReminder-xxx
 
 `INPUT[inlineSelect]` 提供状态下拉栏（需 Meta Bind 插件，已安装）。
 
-## 定时脚本模板
+## 守护进程 (daemon.ps1)
 
-用 **bash heredoc** 写临时 .ps1（纯 ASCII，不含中文），然后 `powershell.exe -File` 执行。
-`show-notification.ps1` 会自己从笔记里读标题/内容，定时脚本只需传 `-NotePath`。
+单个后台进程替代每提醒一个 `Start-Sleep` 进程。每分钟扫描 `reminders/`，到点调 `show-notification.ps1`。
 
-```powershell
-$seconds = <N>
-$noteName = '<YYYY-MM-DD-xxx.md>'
-$taskName = 'ClaudeReminder-xxx'
-$script   = 'C:\Users\chenjunjin\.claude\skills\windows-reminder\scripts\show-notification.ps1'
-$vaultRoot = 'D:\AAAOddsAndEnds\PROGRAM\Obsidian Valut\Study'
-
-# 按文件名递归搜索
-$notePath = Get-ChildItem $vaultRoot -Recurse -Filter $noteName -ErrorAction SilentlyContinue | Select-Object -First 1 | ForEach-Object { $_.FullName }
-if (-not $notePath) { Write-Error "Note not found: $noteName"; exit 1 }
-
-# bgCmd 不含中文——show-notification.ps1 会自己从笔记文件读标题/内容
-$bgCmd = "Start-Sleep -Seconds $seconds; & '$script' -Sound Reminder -NotePath '$notePath' -TaskName '$taskName'"
-Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-WindowStyle', 'Hidden', '-Command', $bgCmd) -WindowStyle Hidden
-```
+- 通过命名 mutex 防止重复实例
+- 启动时自动清理旧的定时进程
+- 由 `startup-check.ps1` 在开机时启动
 
 ## 回复格式
 
@@ -84,6 +70,7 @@ Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-WindowS
 
 ## 架构原则
 
-- 笔记由 Claude 写，定时由 .ps1 做，两件事严格分离
+- **笔记由 Claude 写，定时由 daemon.ps1 做** — 零后台进程开销
+- `daemon.ps1` 单一守护进程，每分钟轮询，无论多少提醒只有一个进程
 - `show-notification.ps1` 触发时自动改 `status: waiting → reminded`
-- `startup-check.ps1` 开机补漏，不丢提醒
+- `startup-check.ps1` 开机补漏 + 启动守护 + 自注册 + 协议注册

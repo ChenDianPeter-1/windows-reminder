@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.7.0] — 2026-06-03
+
+### Changed
+- **守护进程架构**：不再为每个提醒启动独立 PowerShell 进程 `Start-Sleep`。改为 `daemon.ps1` 单一后台进程，每分钟轮询 `reminders/`，到点触发通知。无论多少提醒只占一个进程。
+- `startup-check.ps1` 开机补漏后自动启动守护进程。
+- `protocol-handler.ps1` 的 snooze 改为重置 status 为 `waiting`，由守护进程下一次轮询触发。
+- SKILL.md 工作流程简化：删除"启动后台定时"步骤，改为纯创建笔记。
+
+### Removed
+- 每提醒一个 `Start-Sleep` 后台进程的方案（旧定时脚本模板）。
+
 ## [0.6.1] — 2026-06-03
 
 ### Changed

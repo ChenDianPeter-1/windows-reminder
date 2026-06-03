@@ -32,7 +32,7 @@
 - ⏬ **行内状态下拉栏** — 基于 [Meta Bind](https://github.com/mProjectsCode/obsidian-meta-bind-plugin) 的 `INPUT[inlineSelect]`
 - 📊 **Dataview 实时视图** — 一个表格看所有提醒
 - 🔁 **开机补漏** — `startup-check.ps1` 通过注册表 Run 键自注册；开机自动扫描过期提醒并补弹通知
-- 🧹 **无计划任务依赖** — 纯 `Start-Process` + `Start-Sleep` 后台计时，零系统依赖
+- 🔂 **单一守护进程** — 一个后台进程每分钟轮询，所有提醒共用（不再每提醒一个进程）
 - 🛡️ **自愈机制** — 开机脚本和协议处理器的注册表项丢失都能自己补回来
 
 ## 🏗️ 工作原理
@@ -52,9 +52,9 @@
      └────────┬────────┘
               │
      ┌────────▼────────┐
-     │  定时 .ps1       │  Start-Process powershell.exe -WindowStyle Hidden
-     │  Start-Sleep     │    → 睡到触发时间
-     │  + 后台进程      │    → 调用 show-notification.ps1
+     │  daemon.ps1      │  单进程每分钟轮询
+     │  （后台守护）     │    → 触发时间到了？
+     │                  │    → 调用 show-notification.ps1
      └────────┬────────┘
               │
      ┌────────▼────────┐
@@ -113,10 +113,12 @@ Install-Module -Name BurntToast -Force -Scope CurrentUser
 windows-reminder/
 ├── SKILL.md                          # Claude Code skill 定义
 ├── scripts/
+│   ├── daemon.ps1                    # 后台轮询守护（60s 循环，单进程）
 │   ├── show-notification.ps1         # 弹 toast + 更新 frontmatter 状态
 │   ├── protocol-handler.ps1          # 处理 windows-reminder:// URL（完成按钮）
+│   ├── protocol-launcher.vbs         # 隐藏 PowerShell 窗口
 │   ├── register-protocol.ps1         # 注册自定义协议到注册表
-│   └── startup-check.ps1             # 开机扫描过期提醒 + 补弹
+│   └── startup-check.ps1             # 开机扫描过期提醒 + 启动守护 + 自注册
 ├── CHANGELOG.md                      # 版本历史
 ├── README.md                         # 英文版
 ├── README_CN.md                      # 中文版（本文件）

@@ -40,3 +40,9 @@ if (-not $current -or $current.$regName -ne $regValue) {
 
 # Register custom protocol handler (self-healing)
 & "$PSScriptRoot\register-protocol.ps1"
+
+# Launch daemon (mutex prevents duplicates)
+$daemonPath = Join-Path $PSScriptRoot 'daemon.ps1'
+Start-Process -FilePath 'powershell.exe' -ArgumentList @(
+    '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', $daemonPath
+) -WindowStyle Hidden

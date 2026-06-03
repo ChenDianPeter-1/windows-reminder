@@ -32,7 +32,7 @@
 - ⏬ **Inline status dropdown** — powered by [Meta Bind](https://github.com/mProjectsCode/obsidian-meta-bind-plugin) `INPUT[inlineSelect]`
 - 📊 **Live Dataview** — query all reminders in one table
 - 🔁 **Startup recovery** — `startup-check.ps1` self-registers via registry Run key; catches missed reminders after reboot
-- 🧹 **No Task Scheduler** — pure `Start-Process` + `Start-Sleep` background timing, zero system dependencies
+- 🔂 **Single daemon process** — one background process polls every 60s, handles all reminders (no per-reminder processes)
 - 🛡️ **Self-healing** — startup script and protocol handler re-register themselves if ever removed
 
 ## 🏗️ How It Works
@@ -52,9 +52,9 @@ You say: "十二点提醒我吃饭"
      └────────┬────────┘
               │
      ┌────────▼────────┐
-     │  Timer .ps1      │  Start-Process powershell.exe -WindowStyle Hidden
-     │  Start-Sleep     │    → sleeps until trigger time
-     │  + bg process    │    → calls show-notification.ps1
+     │  daemon.ps1      │  Single process polls every 60s
+     │  (background)    │    → trigger time reached?
+     │                  │    → calls show-notification.ps1
      └────────┬────────┘
               │
      ┌────────▼────────┐
@@ -113,10 +113,12 @@ Just say it naturally to Claude Code in your Obsidian vault:
 windows-reminder/
 ├── SKILL.md                          # Claude Code skill definition
 ├── scripts/
+│   ├── daemon.ps1                    # Background poller (60s loop, single process)
 │   ├── show-notification.ps1         # Toast + frontmatter status update
 │   ├── protocol-handler.ps1          # Handles windows-reminder:// URLs (done button)
+│   ├── protocol-launcher.vbs         # Hides PowerShell window for protocol
 │   ├── register-protocol.ps1         # Registers custom protocol in registry
-│   └── startup-check.ps1             # Post-reboot missed-reminder scan
+│   └── startup-check.ps1             # Post-reboot missed-reminder scan + daemon launcher
 ├── CHANGELOG.md                      # Version history
 ├── README.md                         # This file (English)
 ├── README_CN.md                      # Chinese version
