@@ -68,7 +68,7 @@ Start-Process -FilePath "powershell.exe" -ArgumentList @("-NoProfile", "-WindowS
 
 ## 开机补漏
 
-`scripts/startup-check.ps1` 已注册到 Windows 启动文件夹。每次开机自动扫描 `reminders/`，找到 `status: waiting` 且 `trigger` 已过的笔记，补弹通知并将状态改为 `reminded`。
+`startup-check.ps1` 通过注册表 Run 键自注册（`HKCU\...\Run\WindowsReminder`）。每次开机自动扫描 `reminders/`，补弹错过时间的通知，并更新状态。脚本自带自愈——每次运行检查注册表，丢失自动补上。
 
 ## 架构原则
 
