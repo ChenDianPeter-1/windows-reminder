@@ -66,8 +66,12 @@ Start-Process -FilePath "powershell.exe" -ArgumentList @("-NoProfile", "-WindowS
 | `done` | 已完成 | 手动 |
 | `pending` | 待完成 | 手动 |
 
+## 开机补漏
+
+`scripts/startup-check.ps1` 已注册到 Windows 启动文件夹。每次开机自动扫描 `reminders/`，找到 `status: waiting` 且 `trigger` 已过的笔记，补弹通知并将状态改为 `reminded`。
+
 ## 架构原则
 
-- 笔记由 Claude 写（Write 工具，UTF-8 正确，可含中文/emoji）
-- 定时由 .ps1 做（纯 ASCII，零编码问题，不含中文）
-- `show-notification.ps1` 触发时自动改 frontmatter `status: waiting → reminded`
+- 笔记由 Claude 写，定时由 .ps1 做，两件事严格分离
+- `show-notification.ps1` 触发时自动改 `status: waiting → reminded`
+- `startup-check.ps1` 开机补漏，不丢提醒
