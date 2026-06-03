@@ -28,11 +28,12 @@
 - 👻 **No black window flash** — `Start-Process -WindowStyle Hidden` all the way down
 - 📝 **Obsidian-native logging** — each reminder is a Markdown note with YAML frontmatter
 - 🔄 **Auto status update** — `waiting → reminded` when the toast fires, via regex in `show-notification.ps1`
+- ✅ **One-click "Done"** — toast has a "完成" button; click it → status auto-updates to `done`, no need to open Obsidian
 - ⏬ **Inline status dropdown** — powered by [Meta Bind](https://github.com/mProjectsCode/obsidian-meta-bind-plugin) `INPUT[inlineSelect]`
 - 📊 **Live Dataview** — query all reminders in one table
 - 🔁 **Startup recovery** — `startup-check.ps1` self-registers via registry Run key; catches missed reminders after reboot
 - 🧹 **No Task Scheduler** — pure `Start-Process` + `Start-Sleep` background timing, zero system dependencies
-- 🛡️ **Self-healing** — startup script re-registers itself if the registry key is ever removed
+- 🛡️ **Self-healing** — startup script and protocol handler re-register themselves if ever removed
 
 ## 🏗️ How It Works
 
@@ -113,6 +114,8 @@ windows-reminder/
 ├── SKILL.md                          # Claude Code skill definition
 ├── scripts/
 │   ├── show-notification.ps1         # Toast + frontmatter status update
+│   ├── protocol-handler.ps1          # Handles windows-reminder:// URLs (done button)
+│   ├── register-protocol.ps1         # Registers custom protocol in registry
 │   └── startup-check.ps1             # Post-reboot missed-reminder scan
 ├── CHANGELOG.md                      # Version history
 ├── README.md                         # This file (English)

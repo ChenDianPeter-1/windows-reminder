@@ -28,11 +28,12 @@
 - 👻 **无黑框闪现** — 全链路 `Start-Process -WindowStyle Hidden`
 - 📝 **Obsidian 原生记录** — 每个提醒一张 Markdown 笔记，YAML frontmatter 管理状态
 - 🔄 **状态自动更新** — 通知触发时，`show-notification.ps1` 用正则自动把 `waiting → reminded`
+- ✅ **一键"完成"** — 通知上有"完成"按钮；点了自动把状态改成 `done`，不用切 Obsidian
 - ⏬ **行内状态下拉栏** — 基于 [Meta Bind](https://github.com/mProjectsCode/obsidian-meta-bind-plugin) 的 `INPUT[inlineSelect]`
 - 📊 **Dataview 实时视图** — 一个表格看所有提醒
 - 🔁 **开机补漏** — `startup-check.ps1` 通过注册表 Run 键自注册；开机自动扫描过期提醒并补弹通知
 - 🧹 **无计划任务依赖** — 纯 `Start-Process` + `Start-Sleep` 后台计时，零系统依赖
-- 🛡️ **自愈机制** — 开机脚本每次运行检查注册表，丢失自动补上
+- 🛡️ **自愈机制** — 开机脚本和协议处理器的注册表项丢失都能自己补回来
 
 ## 🏗️ 工作原理
 
@@ -113,6 +114,8 @@ windows-reminder/
 ├── SKILL.md                          # Claude Code skill 定义
 ├── scripts/
 │   ├── show-notification.ps1         # 弹 toast + 更新 frontmatter 状态
+│   ├── protocol-handler.ps1          # 处理 windows-reminder:// URL（完成按钮）
+│   ├── register-protocol.ps1         # 注册自定义协议到注册表
 │   └── startup-check.ps1             # 开机扫描过期提醒 + 补弹
 ├── CHANGELOG.md                      # 版本历史
 ├── README.md                         # 英文版

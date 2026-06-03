@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0] — 2026-06-03
+
+### Added
+- **Toast "完成"按钮**：点击通知上的"完成"直接更新笔记状态为 `done`，无需切回 Obsidian。
+  实现：自定义协议 `windows-reminder://done?note=xxx`，点击按钮 → 协议处理器 → 更新 frontmatter。
+- `scripts/protocol-handler.ps1` — 解析协议 URL，更新笔记状态。
+- `scripts/register-protocol.ps1` — 注册 `windows-reminder://` 协议到注册表，自愈机制。
+- `startup-check.ps1` 和 `show-notification.ps1` 启动时自动注册协议。
+
+### Changed
+- `show-notification.ps1`：默认使用"完成"按钮代替 Snooze（二者互斥）。`-Snooze` 开关仍可用。
+- 定时脚本模板：`$bgCmd` 不再传 `-Snooze`。
+
 ## [0.5.1] — 2026-06-03
 
 ### Fixed

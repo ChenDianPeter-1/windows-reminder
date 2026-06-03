@@ -30,13 +30,26 @@ if ($NotePath -and (Test-Path $NotePath)) {
 if (-not $Title)   { $Title = 'Reminder' }
 if (-not $Message) { $Message = 'Time to check your reminder' }
 
+# Ensure protocol handler is registered (one-time setup, self-healing)
+& "$PSScriptRoot\register-protocol.ps1"
+
 # Toast
 if (-not (Get-Module -ListAvailable BurntToast)) {
     try { Install-PackageProvider -Name NuGet -Force -Scope CurrentUser; Install-Module -Name BurntToast -Force -Scope CurrentUser } catch { exit 1 }
 }
 Import-Module BurntToast -Force
+
 $p = @{ Text = @($Title, $Message); Sound = $Sound }
-if ($Snooze) { New-BurntToastNotification @p -SnoozeAndDismiss } else { New-BurntToastNotification @p }
+
+# "Done" button via custom protocol (default); snooze is opt-in since -Button and -SnoozeAndDismiss are mutually exclusive
+if ($NotePath) {
+    $noteName = Split-Path $NotePath -Leaf
+    $button = New-BTButton -Content '完成' -Arguments "windows-reminder://done?note=$([Uri]::EscapeDataString($noteName))" -ActivationType Protocol
+    $p['Button'] = $button
+}
+if ($Snooze) { $p.Remove('Button'); $p['SnoozeAndDismiss'] = $true }
+
+New-BurntToastNotification @p
 
 # Update frontmatter: waiting -> reminded
 if ($NotePath -and (Test-Path $NotePath)) {

@@ -47,7 +47,7 @@ $notePath = Get-ChildItem $vaultRoot -Recurse -Filter $noteName -ErrorAction Sil
 if (-not $notePath) { Write-Error "Note not found: $noteName"; exit 1 }
 
 # bgCmd 不含中文——show-notification.ps1 会自己从笔记文件读标题/内容
-$bgCmd = "Start-Sleep -Seconds $seconds; & '$script' -Sound Reminder -Snooze -NotePath '$notePath' -TaskName '$taskName'"
+$bgCmd = "Start-Sleep -Seconds $seconds; & '$script' -Sound Reminder -NotePath '$notePath' -TaskName '$taskName'"
 Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-WindowStyle', 'Hidden', '-Command', $bgCmd) -WindowStyle Hidden
 ```
 
@@ -63,8 +63,17 @@ Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-WindowS
 |---|------|------|
 | `waiting` | 等待触发 | 系统 |
 | `reminded` | 已弹通知 | 系统自动 |
-| `done` | 已完成 | 手动 |
+| `done` | 已完成 | 点 toast "完成"按钮 / 手动下拉 |
 | `pending` | 待完成 | 手动 |
+
+## Toast "完成"按钮
+
+通知弹窗自带"完成"按钮。点击后通过 `windows-reminder://` 自定义协议触发 `protocol-handler.ps1`，自动将笔记状态改为 `done`，无需切回 Obsidian。
+
+- `register-protocol.ps1` — 注册表注册协议（`show-notification.ps1` 和 `startup-check.ps1` 每次运行时自愈）
+- `protocol-handler.ps1` — 解析 URL，更新 status
+
+注意：`-Button` 与 `-SnoozeAndDismiss` 在 BurntToast 中互斥。默认使用按钮；传 `-Snooze` 时用 snooze 替代按钮。
 
 ## 开机补漏
 

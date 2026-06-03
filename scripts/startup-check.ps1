@@ -26,7 +26,9 @@ Get-ChildItem $noteDir -Filter '*.md' | ForEach-Object {
     # Fire notification
     if (Get-Module -ListAvailable BurntToast) {
         Import-Module BurntToast -Force -ErrorAction SilentlyContinue
-        New-BurntToastNotification -Text $message, "Missed: $($trigger.ToString('MM-dd HH:mm'))" -Sound Reminder -ErrorAction SilentlyContinue
+        $noteName = Split-Path $_.FullName -Leaf
+        $button = New-BTButton -Content '完成' -Arguments "windows-reminder://done?note=$([Uri]::EscapeDataString($noteName))" -ActivationType Protocol
+        New-BurntToastNotification -Text $message, "Missed: $($trigger.ToString('MM-dd HH:mm'))" -Sound Reminder -Button $button -ErrorAction SilentlyContinue
     }
 
     # Update status
@@ -43,3 +45,6 @@ $current = Get-ItemProperty -Path $regPath -Name $regName -ErrorAction SilentlyC
 if (-not $current -or $current.$regName -ne $regValue) {
     Set-ItemProperty -Path $regPath -Name $regName -Value $regValue -Force
 }
+
+# Register custom protocol handler (self-healing)
+& "$PSScriptRoot\register-protocol.ps1"
