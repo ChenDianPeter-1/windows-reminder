@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.1] — 2026-06-03
+
+### Fixed
+- **命令行中文编码崩溃**：`Start-Process -WindowStyle Hidden -Command "..."` 中，中文参数会被 PowerShell 5.1 的 Hidden 窗口编码搞坏，导致后台定时进程静默失败。修复：`show-notification.ps1` 改为从笔记文件内部读取标题和内容（`Get-Content -Encoding UTF8`），定时脚本的 `$bgCmd` 保持纯 ASCII。
+- 定时脚本模板同步更新：去掉 `$title`/`$message` 变量和 `-Title`/`-Message` 参数。
+
+### Added
+- 双语 README：`README.md`（English）+ `README_CN.md`（中文），顶部一键切换。
+
 ## [0.5.0] — 2026-06-03
 
 ### Changed

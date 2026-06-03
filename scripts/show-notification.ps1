@@ -7,6 +7,29 @@ param(
     [string]$TaskName
 )
 
+# Read title and message from note file if NotePath provided (avoids Chinese-in-command-line encoding issues)
+if ($NotePath -and (Test-Path $NotePath)) {
+    try {
+        $noteContent = Get-Content $NotePath -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
+        if ($noteContent) {
+            if (-not $Title -and $noteContent -match '(?m)^#\s+(.+)$') {
+                $Title = $Matches[1].Trim()
+            }
+            if (-not $Message) {
+                $lines = $noteContent -split "`n"
+                $boldLines = $lines | Where-Object { $_ -match '^\*\*' }
+                if ($boldLines.Count -ge 2 -and $boldLines[1] -match '\*\*.+?\*\*(.+)$') {
+                    $Message = $Matches[1].Trim()
+                }
+            }
+        }
+    } catch { }
+}
+
+# Fallbacks
+if (-not $Title)   { $Title = 'Reminder' }
+if (-not $Message) { $Message = 'Time to check your reminder' }
+
 # Toast
 if (-not (Get-Module -ListAvailable BurntToast)) {
     try { Install-PackageProvider -Name NuGet -Force -Scope CurrentUser; Install-Module -Name BurntToast -Force -Scope CurrentUser } catch { exit 1 }

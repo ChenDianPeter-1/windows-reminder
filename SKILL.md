@@ -32,23 +32,23 @@ task_name: ClaudeReminder-xxx
 
 ## 定时脚本模板
 
-用 **bash heredoc** 写临时 .ps1（纯 ASCII，不含中文），然后 `powershell.exe -File` 执行：
+用 **bash heredoc** 写临时 .ps1（纯 ASCII，不含中文），然后 `powershell.exe -File` 执行。
+`show-notification.ps1` 会自己从笔记里读标题/内容，定时脚本只需传 `-NotePath`。
 
 ```powershell
 $seconds = <N>
-$noteName = "<YYYY-MM-DD-xxx.md>"
-$taskName = "ClaudeReminder-xxx"
-$title    = "<title>"
-$message  = "<message>"
-$script   = "C:\Users\chenjunjin\.claude\skills\windows-reminder\scripts\show-notification.ps1"
-$vaultRoot = "D:\AAAOddsAndEnds\PROGRAM\Obsidian Valut\Study"
+$noteName = '<YYYY-MM-DD-xxx.md>'
+$taskName = 'ClaudeReminder-xxx'
+$script   = 'C:\Users\chenjunjin\.claude\skills\windows-reminder\scripts\show-notification.ps1'
+$vaultRoot = 'D:\AAAOddsAndEnds\PROGRAM\Obsidian Valut\Study'
 
-# 按文件名递归搜索（文件夹名含中文，不硬编码）
+# 按文件名递归搜索
 $notePath = Get-ChildItem $vaultRoot -Recurse -Filter $noteName -ErrorAction SilentlyContinue | Select-Object -First 1 | ForEach-Object { $_.FullName }
 if (-not $notePath) { Write-Error "Note not found: $noteName"; exit 1 }
 
-$bgCmd = "Start-Sleep -Seconds $seconds; & '$script' -Title '$title' -Message '$message' -Sound Reminder -Snooze -NotePath '$notePath' -TaskName '$taskName'"
-Start-Process -FilePath "powershell.exe" -ArgumentList @("-NoProfile", "-WindowStyle", "Hidden", "-Command", $bgCmd) -WindowStyle Hidden
+# bgCmd 不含中文——show-notification.ps1 会自己从笔记文件读标题/内容
+$bgCmd = "Start-Sleep -Seconds $seconds; & '$script' -Sound Reminder -Snooze -NotePath '$notePath' -TaskName '$taskName'"
+Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-WindowStyle', 'Hidden', '-Command', $bgCmd) -WindowStyle Hidden
 ```
 
 ## 回复格式
