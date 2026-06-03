@@ -23,17 +23,9 @@ Get-ChildItem $noteDir -Filter '*.md' | ForEach-Object {
     $message = if ($content -match '(?m)^#\s*(.+)$') { $Matches[1].Trim() } else { 'Missed reminder' }
     $taskName = if ($content -match '(?m)^task_name:\s*(.+)$') { $Matches[1].Trim() } else { '' }
 
-    # Fire notification
-    if (Get-Module -ListAvailable BurntToast) {
-        Import-Module BurntToast -Force -ErrorAction SilentlyContinue
-        $noteName = Split-Path $_.FullName -Leaf
-        $button = New-BTButton -Content '完成' -Arguments "windows-reminder://done?note=$([Uri]::EscapeDataString($noteName))" -ActivationType Protocol
-        New-BurntToastNotification -Text $message, "Missed: $($trigger.ToString('MM-dd HH:mm'))" -Sound Reminder -Button $button -ErrorAction SilentlyContinue
-    }
-
-    # Update status
-    $updated = $content -replace '(?m)^status: waiting$', 'status: reminded'
-    $updated | Set-Content $_.FullName -Encoding UTF8 -NoNewline -ErrorAction SilentlyContinue
+    # Fire notification via show-notification.ps1 (handles toast + status update)
+    $showNotif = Join-Path $PSScriptRoot 'show-notification.ps1'
+    & $showNotif -Sound Reminder -NotePath $_.FullName -TaskName $taskName
     $fired++
 }
 

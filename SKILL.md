@@ -66,14 +66,17 @@ Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-WindowS
 | `done` | 已完成 | 点 toast "完成"按钮 / 手动下拉 |
 | `pending` | 待完成 | 手动 |
 
-## Toast "完成"按钮
+## Toast 操作
 
-通知弹窗自带"完成"按钮。点击后通过 `windows-reminder://` 自定义协议触发 `protocol-handler.ps1`，自动将笔记状态改为 `done`，无需切回 Obsidian。
+通知弹窗同时提供原生 **Snooze 下拉**（1/5/10/30/60 分钟）和 **Done 按钮**。
 
-- `register-protocol.ps1` — 注册表注册协议（`show-notification.ps1` 和 `startup-check.ps1` 每次运行时自愈）
+- Snooze：Windows 原生延后提醒，到时自动重弹通知
+- Done：通过 `windows-reminder://done?note=xxx` 自定义协议 → VBS 壳（无黑框）→ `protocol-handler.ps1` → `status: done`
+- Toast 用 `New-BTContent` + `Submit-BTNotification` 手动构建，绕开 BurntToast 高層 API 的互斥限制
+
+- `register-protocol.ps1` — 注册表注册协议 + VBS 壳（自愈）
+- `protocol-launcher.vbs` — 隐藏 PowerShell 窗口
 - `protocol-handler.ps1` — 解析 URL，更新 status
-
-注意：`-Button` 与 `-SnoozeAndDismiss` 在 BurntToast 中互斥。默认使用按钮；传 `-Snooze` 时用 snooze 替代按钮。
 
 ## 开机补漏
 

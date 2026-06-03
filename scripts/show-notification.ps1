@@ -41,15 +41,40 @@ Import-Module BurntToast -Force
 
 $p = @{ Text = @($Title, $Message); Sound = $Sound }
 
-# "Done" button via custom protocol (default); snooze is opt-in since -Button and -SnoozeAndDismiss are mutually exclusive
+# Build toast with BOTH native snooze dropdown AND Done button.
+# BurntToast high-level API has mutually exclusive -Button/-SnoozeAndDismiss sets,
+# so we build the toast content manually with New-BT* + Submit-BTNotification.
 if ($NotePath) {
     $noteName = Split-Path $NotePath -Leaf
-    $button = New-BTButton -Content '完成' -Arguments "windows-reminder://done?note=$([Uri]::EscapeDataString($noteName))" -ActivationType Protocol
-    $p['Button'] = $button
-}
-if ($Snooze) { $p.Remove('Button'); $p['SnoozeAndDismiss'] = $true }
+    $encoded  = [Uri]::EscapeDataString($noteName)
 
-New-BurntToastNotification @p
+    $visual = New-BTVisual -BindingGeneric (New-BTBinding -Children @(
+        New-BTText -Text $Title
+        New-BTText -Text $Message
+    ))
+
+    $snoozeInput = New-BTInput -Id 'snoozeTime' -DefaultSelectionBoxItemId '5' -Items @(
+        New-BTSelectionBoxItem -Id '1'  -Content '1 minute'
+        New-BTSelectionBoxItem -Id '5'  -Content '5 minutes'
+        New-BTSelectionBoxItem -Id '10' -Content '10 minutes'
+        New-BTSelectionBoxItem -Id '30' -Content '30 minutes'
+        New-BTSelectionBoxItem -Id '60' -Content '1 hour'
+    )
+
+    $action = New-BTAction -Inputs @($snoozeInput) -Buttons @(
+        (New-BTButton -Snooze)
+        (New-BTButton -Dismiss)
+        (New-BTButton -Content 'Done' -Arguments "windows-reminder://done?note=$encoded" -ActivationType Protocol)
+    )
+
+    $content = New-BTContent -Visual $visual -Actions $action -Scenario Reminder
+    Submit-BTNotification -Content $content
+} elseif ($Snooze) {
+    # Fallback: no NotePath, use simple snooze
+    New-BurntToastNotification @p -SnoozeAndDismiss
+} else {
+    New-BurntToastNotification @p
+}
 
 # Update frontmatter: waiting -> reminded
 if ($NotePath -and (Test-Path $NotePath)) {

@@ -1,8 +1,8 @@
 # Register windows-reminder:// custom protocol handler
 # Run once (or on every startup-check for self-healing)
 
-$handlerPath = Join-Path $PSScriptRoot 'protocol-handler.ps1'
-$psCmd = "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$handlerPath`" `"%1`""
+$launcherPath = Join-Path $PSScriptRoot 'protocol-launcher.vbs'
+$psCmd = "wscript.exe `"$launcherPath`" `"%1`""
 
 $regRoot = 'HKCU:\Software\Classes\windows-reminder'
 

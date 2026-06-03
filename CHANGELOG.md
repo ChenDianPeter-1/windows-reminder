@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.1] — 2026-06-03
+
+### Changed
+- **原生 Snooze 下拉 + Done 按钮共存**：用 `New-BTContent` + `Submit-BTNotification` 手动构建 toast，突破 BurntToast 高層 API 的 `-Button`/`-SnoozeAndDismiss` 互斥限制。现在通知同时有：snooze 时间下拉（1/5/10/30/60 min）+ Done 按钮。
+- `show-notification.ps1` 重构为自定义 toast 构建。
+- `startup-check.ps1` 改为调用 `show-notification.ps1`，复用同一套 toast 逻辑。
+
+### Fixed
+- 按钮中文 "完成" 乱码 → 改为英文 "Done"。
+- 点击按钮弹出黑框 → 协议注册改用 `wscript.exe` + VBS 壳（`protocol-launcher.vbs`）彻底隐藏 PowerShell 窗口。
+
 ## [0.6.0] — 2026-06-03
 
 ### Added
