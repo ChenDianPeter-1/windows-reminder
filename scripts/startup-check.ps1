@@ -41,6 +41,11 @@ if (-not $current -or $current.$regName -ne $regValue) {
 # Register custom protocol handler (self-healing)
 & "$PSScriptRoot\register-protocol.ps1"
 
+# Ensure PowerShell is allowed to send notifications (self-healing)
+$notifReg = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings\Windows PowerShell'
+if (-not (Test-Path $notifReg)) { New-Item -Path $notifReg -Force | Out-Null }
+Set-ItemProperty -Path $notifReg -Name 'Enabled' -Value 1 -Force -ErrorAction SilentlyContinue
+
 # Launch daemon (mutex prevents duplicates)
 $daemonPath = Join-Path $PSScriptRoot 'daemon.ps1'
 Start-Process -FilePath 'powershell.exe' -ArgumentList @(

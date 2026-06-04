@@ -1,6 +1,15 @@
 # Changelog
 
-## [0.7.0] — 2026-06-03
+## [0.7.1] — 2026-06-04
+
+### Fixed
+- **守护进程重复实例**：mutex 改为 `$createdNew` 模式，防止两个 daemon 同时运行。
+- **Windows 通知被压制**：PowerShell 不在通知白名单里，导致 toast 可能不显示。`startup-check.ps1` 开机时自动注册 `HKCU\...\Notifications\Settings\Windows PowerShell`。
+
+### Added
+- `daemon.ps1` 日志功能：`%TEMP%\windows-reminder-daemon.log`，记录启动、触发、错误。
+
+## [0.7.0] — 2026-06-04
 
 ### Changed
 - **守护进程架构**：不再为每个提醒启动独立 PowerShell 进程 `Start-Sleep`。改为 `daemon.ps1` 单一后台进程，每分钟轮询 `reminders/`，到点触发通知。无论多少提醒只占一个进程。
