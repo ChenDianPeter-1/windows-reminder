@@ -32,7 +32,7 @@ Get-WmiObject Win32_Process -Filter "Name='powershell.exe'" | ForEach-Object {
 if ($killed -gt 0) { Write-Log "Killed $killed legacy timer process(es)" }
 
 while ($true) {
-    if (-not (Test-Path $noteDir)) { Start-Sleep -Seconds 60; continue }
+    if (-not (Test-Path $noteDir)) { Start-Sleep -Seconds 15; continue }
 
     $now = Get-Date
     $fired = 0
@@ -60,7 +60,7 @@ while ($true) {
     }
     if ($fired -gt 0) { Write-Log "Fired $fired notification(s)" }
 
-    Start-Sleep -Seconds 60
+    Start-Sleep -Seconds 15
 }
 
 # Keep mutex alive (never reached, but GC safety)
