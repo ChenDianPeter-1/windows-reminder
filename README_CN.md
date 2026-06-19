@@ -59,6 +59,9 @@ winget install Microsoft.DotNet.SDK.8
 cd src/WindowsReminder
 dotnet run
 
+# 或直接运行发布版：
+%LOCALAPPDATA%\WindowsReminder\WindowsReminder.exe
+
 # 3. 发布（独立 EXE）
 dotnet publish -c Release
 ```
