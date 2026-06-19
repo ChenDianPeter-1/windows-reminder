@@ -1,18 +1,12 @@
 <p align="center">
-  <img src="https://img.icons8.com/fluency/96/appointment-reminders--v1.png" alt="Windows Reminder" width="96" height="96">
-</p>
-
-<h1 align="center">Windows Reminder</h1>
-
-<p align="center">
-  <em>Set Windows toast reminders using natural language — powered by Claude Code + Obsidian</em>
+  <h1 align="center">Windows Reminder</h1>
+  <p align="center"><em>Set Windows toast reminders via Claude Code + Obsidian — powered by C# WPF tray app</em></p>
 </p>
 
 <p align="center">
-  <a href="https://github.com/ChenDianPeter-1/windows-reminder/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
-  <a href="https://github.com/ChenDianPeter-1/windows-reminder/stargazers"><img src="https://img.shields.io/github/stars/ChenDianPeter-1/windows-reminder?style=flat" alt="Stars"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <img src="https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet" alt=".NET">
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows" alt="Platform">
-  <img src="https://img.shields.io/badge/powershell-5.1%2B-5391FE?logo=powershell" alt="PowerShell">
 </p>
 
 <p align="center">
@@ -21,121 +15,68 @@
 
 ---
 
-## ✨ Features
-
-- 🗣️ **Natural language** — "提醒我明天下午3点开会" → sets a toast notification
-- 🔔 **Native Windows toasts** — via [BurntToast](https://github.com/Windos/BurntToast), no custom UI
-- 👻 **No black window flash** — `Start-Process -WindowStyle Hidden` all the way down
-- 📝 **Obsidian-native logging** — each reminder is a Markdown note with YAML frontmatter
-- 🔄 **Auto status update** — `waiting → reminded` when the toast fires, via regex in `show-notification.ps1`
-- ✅ **One-click "Done"** — toast has a "完成" button; click it → status auto-updates to `done`, no need to open Obsidian
-- ⏬ **Inline status dropdown** — powered by [Meta Bind](https://github.com/mProjectsCode/obsidian-meta-bind-plugin) `INPUT[inlineSelect]`
-- 📊 **Live Dataview** — query all reminders in one table
-- 🔁 **Startup recovery** — `startup-check.ps1` self-registers via registry Run key; catches missed reminders after reboot
-- 🔂 **Single daemon process** — one background process polls every 60s, handles all reminders (no per-reminder processes)
-- 🛡️ **Self-healing** — startup script and protocol handler re-register themselves if ever removed
-
-## 🏗️ How It Works
+## How It Works
 
 ```
 You say: "十二点提醒我吃饭"
               │
      ┌────────▼────────┐
-     │  SKILL.md        │  Claude parses time → 2026-06-03 12:00
-     │  Parse & create  │
+     │  Claude Code     │  Parses time → creates reminders/YYYY-MM-DD-lunch.md
+     │  (SKILL.md)      │
      └────────┬────────┘
               │
      ┌────────▼────────┐
-     │  reminders/      │  Writes YYYY-MM-DD-slug.md with YAML frontmatter
-     │  2026-06-03-     │    status: waiting
-     │  lunch.md        │    trigger: 2026-06-03 12:00
+     │  WindowsReminder │  C# WPF tray app polls every 30s
+     │  .exe (tray)     │  → trigger reached → Windows toast
      └────────┬────────┘
               │
      ┌────────▼────────┐
-     │  daemon.ps1      │  Single process polls every 60s
-     │  (background)    │    → trigger time reached?
-     │                  │    → calls show-notification.ps1
-     └────────┬────────┘
-              │
-     ┌────────▼────────┐
-     │  BurntToast      │  🔔 Native Windows notification
-     │  notification    │  📝 status: waiting → reminded (auto)
-     │  + status update │  ⏬ Optional: inlineSelect → done/pending
+     │  Toast           │  🔔 Done → status: done
+     │  [Done] [Snooze] │  ⏰ Snooze → trigger postponed
+     │  [Open Note]     │  📝 Open Note → Obsidian
      └──────────────────┘
 ```
 
-## 📦 Installation
+## Features
 
-### 1. Install the Skill
+- 🗣️ **Natural language** — "提醒我明天下午3点开会" → sets a toast
+- 🔔 **Native Windows toasts** — Done / Snooze / Open Note buttons
+- 📝 **Obsidian Markdown** — reminders stored as YAML frontmatter notes
+- 🔂 **Single tray app** — one process, all reminders
+- ✅ **One-click Done** — marks file as done
+- ⏰ **Persistent Snooze** — reschedules trigger in file, survives reboot
+- 📖 **Open Note** — opens reminder in Obsidian via `obsidian://open`
+- 🔁 **Auto-start** — registers via Windows Run key
+- 🛡️ **DryRun mode** — test without modifying files
+
+## Quick Start
 
 ```bash
-# Clone into your Claude skills directory
-git clone https://github.com/ChenDianPeter-1/windows-reminder.git \
-  "$HOME/.claude/skills/windows-reminder"
+# 1. Install .NET 8.0 SDK
+winget install Microsoft.DotNet.SDK.8
+
+# 2. Run
+cd src/WindowsReminder
+dotnet run
+
+# 3. Publish (standalone EXE)
+dotnet publish -c Release
 ```
 
-### 2. Install BurntToast (auto-installed on first run)
+## Configuration
 
-```powershell
-Install-Module -Name BurntToast -Force -Scope CurrentUser
-```
+`src/WindowsReminder/appsettings.json`:
 
-### 3. Obsidian Plugins (already configured in vault)
+| Key | Description |
+|-----|-------------|
+| `VaultRoot` | Obsidian vault root path |
+| `RemindersRelativePath` | Reminders folder (default: `reminders`) |
+| `ObsidianVaultName` | Vault name for `obsidian://open` |
+| `PollIntervalSeconds` | Scan interval (default: 30) |
+| `DryRun` | Toast only, no file writes |
+| `AutoStart` | Register for Windows startup |
 
-- [Meta Bind](https://github.com/mProjectsCode/obsidian-meta-bind-plugin) — status dropdown
-- [Dataview](https://github.com/blacksmithgu/obsidian-dataview) — reminder overview table
-
-### 4. Startup Recovery (one-time setup)
-
-Run once to register the startup check:
-
-```powershell
-& "$env:USERPROFILE\.claude\skills\windows-reminder\scripts\startup-check.ps1"
-```
-
-This adds a `WindowsReminder` entry to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. It runs at every login and re-registers itself if missing.
-
-## 🚀 Usage
-
-Just say it naturally to Claude Code in your Obsidian vault:
-
-| You say | Result |
-|---------|--------|
-| `十二点提醒我吃饭` | Toast at 12:00 today |
-| `5分钟后提醒我看邮件` | Toast in 5 minutes |
-| `明天下午3点提醒我开会` | Toast tomorrow at 15:00 |
-| `下周一早上10点提醒我交报告` | Toast next Monday at 10:00 |
-| `晚上7点提醒我去健身房` | Toast at 19:00 today (warns if already past) |
-
-## 📁 Project Structure
-
-```
-windows-reminder/
-├── SKILL.md                          # Claude Code skill definition
-├── scripts/
-│   ├── daemon.ps1                    # Background poller (60s loop, single process)
-│   ├── show-notification.ps1         # Toast + frontmatter status update
-│   ├── protocol-handler.ps1          # Handles windows-reminder:// URLs (done button)
-│   ├── protocol-launcher.vbs         # Hides PowerShell window for protocol
-│   ├── register-protocol.ps1         # Registers custom protocol in registry
-│   └── startup-check.ps1             # Post-reboot missed-reminder scan + daemon launcher
-├── CHANGELOG.md                      # Version history
-├── README.md                         # This file (English)
-├── README_CN.md                      # Chinese version
-└── .gitignore
-```
-
-### Vault-side (created by the skill at runtime)
-
-```
-vault/
-├── reminders/                        # One .md note per reminder
-│   ├── 2026-06-03-lunch.md
-│   └── 2026-06-04-meeting.md
-└── 提醒记录.md                       # Dataview overview query
-```
-
-## 📝 Reminder Note Format
+## Reminder File Format
 
 ```markdown
 ---
@@ -147,34 +88,26 @@ task_name: ClaudeReminder-lunch
 
 # 吃饭提醒
 
-`INPUT[inlineSelect(option(waiting, ⏳ 等待中), option(reminded, 🔔 已提醒),
-  option(done, ✅ 已完成), option(pending, ❌ 待完成)):status]`
-
 **触发时间**：2026年6月3日 12:00
 **内容**：该吃饭了！
 ```
 
-## 🔧 Status States
+## Tray Menu
 
-| Status | Meaning | Updated by |
-|--------|---------|------------|
-| `waiting` | Pending trigger | System (on creation) |
-| `reminded` | Notification fired | System (auto) |
-| `done` | Completed | User (manual dropdown) |
-| `pending` | To-do / snoozed | User (manual dropdown) |
+- Test Toast / Open Log Folder / Open Reminders Folder
+- Scanner: Scan Now / Status / Pause / Resume
+- Startup: Enable / Disable / Status
+- Debug: Parse / WriteBack Test
 
-## ⚠️ Known Limitations
+## Troubleshooting
 
-- **PowerShell 5.1 encoding**: `.ps1` files must be pure ASCII or UTF-8 with BOM. The skill handles this internally — timer scripts never contain Chinese characters; `show-notification.ps1` reads them from the note file instead.
-- **No persistent scheduled tasks**: timers are one-shot background processes. If you kill the PowerShell process, the reminder is lost until `startup-check.ps1` catches it on next boot.
-- **Single machine**: reminders are local. No sync between devices.
+| Issue | Fix |
+|-------|-----|
+| Toast not showing | Check Windows notification settings; ensure Start Menu shortcut exists |
+| Done button no callback | Verify `%APPDATA%\Microsoft\Windows\Start Menu\Programs\WindowsReminder.lnk` exists |
+| Old daemon still running | Remove `HKCU\...\Run\WindowsReminder` (PowerShell entry) |
+| App won't start | .NET 8 runtime required; check `%APPDATA%\WindowsReminder\logs\` |
 
-## 📄 License
+## License
 
 MIT © ChenDianPeter-1
-
----
-
-<p align="center">
-  <sub>Built with ❤️ for the Obsidian + Claude Code ecosystem</sub>
-</p>

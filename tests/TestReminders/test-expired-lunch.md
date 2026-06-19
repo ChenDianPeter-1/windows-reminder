@@ -1,0 +1,13 @@
+---
+status: reminded
+trigger: 2026-06-03 12:00
+created: 2026-06-03 11:08
+task_name: ClaudeReminder-lunch
+---
+
+# 吃饭提醒
+
+`INPUT[inlineSelect(option(waiting, ⏳ 等待中), option(reminded, 🔔 已提醒), option(done, ✅ 已完成), option(pending, ❌ 待完成)):status]`
+
+**触发时间**：2026年6月3日 12:00
+**内容**：该吃饭了！
