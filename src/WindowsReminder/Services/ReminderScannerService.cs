@@ -99,7 +99,7 @@ public class ReminderScannerService
             {
                 var r = _fileService.ParseFile(file);
                 if (r == null) continue;
-                if (r.Status != ReminderStatus.Waiting) continue;
+                if (r.Status != ReminderStatus.Waiting && r.Status != ReminderStatus.Pending) continue;
                 if (r.Trigger == null || r.Trigger.Value > now) continue;
                 if (_recentlyFired.TryGetValue(file, out var last) && (now - last).TotalSeconds < 60) continue;
 
@@ -125,7 +125,7 @@ public class ReminderScannerService
         if (path == null) return;
         var r = _fileService.ParseFile(path);
         if (r == null) return;
-        if (r.Status != ReminderStatus.Waiting && r.Status != ReminderStatus.Reminded && r.Status != ReminderStatus.Snoozed)
+        if (r.Status != ReminderStatus.Waiting && r.Status != ReminderStatus.Reminded && r.Status != ReminderStatus.Snoozed && r.Status != ReminderStatus.Pending)
         { _logger.LogWarning("Done: status {Status} not eligible ({File})", r.Status, fileName); return; }
 
         if (_dryRun) { _logger.LogInformation("[DryRun] Would mark done: {File}", fileName); return; }
